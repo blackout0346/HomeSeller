@@ -6,9 +6,9 @@ namespace HomeSellerServer.StoreService;
 
 public class ProductStore : IProductStore
 {
-    private readonly AppDbContext dbcontext;
+    private readonly ProductDbContext dbcontext;
 
-    public ProductStore(AppDbContext context)
+    public ProductStore(ProductDbContext context)
     {
         this.dbcontext = context;
     }
@@ -16,7 +16,7 @@ public class ProductStore : IProductStore
     public async Task<IEnumerable<Products>> GetProducts(string? search = null)
     {
         var query = dbcontext.Products.Include(p => p.Condition)
-            .Include(p => p.User)
+        
             .Include(p => p.ProductTags).AsQueryable();
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -33,7 +33,7 @@ public class ProductStore : IProductStore
         return await dbcontext.Products
             .AsNoTracking()
             .Include(p => p.Condition)
-            .Include(p => p.User)
+ 
             .Include(p => p.ProductTags)
             .ThenInclude(pt => pt.Tag)
             .FirstOrDefaultAsync(p => p.Id == id);

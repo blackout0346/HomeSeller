@@ -12,17 +12,6 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    if (!await context.Tags.AnyAsync())
-    {
-        var json = await File.ReadAllTextAsync("InitData.json");
-        var tags = JsonSerializer.Deserialize<List<Tags>>(json);
-
-        if (tags != null)
-        {
-            await context.Tags.AddRangeAsync(tags);
-            await context.SaveChangesAsync();
-        }
-    }
    
 }
 app.MapGet("/", () => "Hello World!");

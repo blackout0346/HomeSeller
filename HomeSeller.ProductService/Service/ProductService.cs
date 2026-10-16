@@ -106,7 +106,6 @@ public class ProductService : IProductService
     {
         Id = products.Id,
         UserId = products.UserId,
-        SellerLogin = products.User?.Login ?? string.Empty,
         CreateAt = products.CreateAt,
         Description = products.Description,
         Price = products.Price,
