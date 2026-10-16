@@ -17,7 +17,7 @@ namespace HomeSellerServer.Service
 
         public AuthService(IHashPassword hashPassword, IUserStore userStore, IRabbitMqProducer rabbitMqProducer)
         {
-            _hashPassword = hashPassword;
+            _rabbitMqProducer = rabbitMqProducer;
             _hashPassword = hashPassword;
             _userStore = userStore;
         }
@@ -94,6 +94,22 @@ namespace HomeSellerServer.Service
 
             await _userStore.UpdateUserAsync(user);
 
+            return true;
+        }
+
+        public async Task<bool> DeleteUserAsync(Guid userId)
+        {
+            var user = await _userStore.GetByIdAsync(userId);
+            if (user == null || user.isDeleted)
+            {
+                return false;
+            }
+            var deleted = await _userStore.DeleteUserAsync(user);
+            if (!deleted)
+            {
+                return false;
+            }
+            await _rabbitMqProducer.PublishAsync("user.deleted",new UserDeletedEvent{UserId = userId});
             return true;
         }
     }

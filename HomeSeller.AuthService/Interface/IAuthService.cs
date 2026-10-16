@@ -11,5 +11,7 @@ namespace HomeSellerServer.Module
         Task<RegisterResponse> RegisterAsync(RegisterRequest registerRequest);
         Task<LoginResponse> LoginAsync(LoginRequest loginRequest);
         Task<bool> ChangePasswordAsync(ChangePasswordRequest changePasswordRequest);
+
+        public Task<bool> DeleteUserAsync(Guid userId);
     }
 }

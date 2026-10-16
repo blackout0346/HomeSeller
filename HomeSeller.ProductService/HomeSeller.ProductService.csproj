@@ -13,6 +13,11 @@
 
     <ItemGroup>
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+      <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\HomeSeller.Shared\HomeSeller.Shared.csproj" />
     </ItemGroup>
 
 </Project>

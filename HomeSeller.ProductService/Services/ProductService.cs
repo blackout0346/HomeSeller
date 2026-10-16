@@ -6,6 +6,7 @@ namespace HomeSellerServer.Service;
 
 public class ProductService : IProductService
 {
+
     private readonly IProductStore _productStore;
 
     public ProductService(IProductStore productStore)
@@ -16,7 +17,7 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductsResponse>> GetProductsAsync(string? search = null)
     {
-        var products = await _productStore.GetProducts();
+        var products = await _productStore.GetProducts(search);
         return products.Select(MapToResponse);
     }
 
@@ -59,6 +60,7 @@ public class ProductService : IProductService
 
     public async Task<ProductsResponse?> UpdateProductsAsync(Guid id, ProductsRequest request)
     {
+
         var existing = await _productStore.GetProductsIdAsync(id);
         if (existing == null)
         {

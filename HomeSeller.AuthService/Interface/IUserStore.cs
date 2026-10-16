@@ -12,5 +12,7 @@ namespace HomeSellerServer.Interface
         Task AddAsync(Users user);
         Task<bool> ExistsByLoginAsync(string login);
         public Task<bool> UpdateUserAsync(Users updatedUser);
+        
+        public Task<bool> DeleteUserAsync(Users user);
     }
 }

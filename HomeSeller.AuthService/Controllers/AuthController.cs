@@ -65,4 +65,27 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPost("DeleteUser/{userId}")]
+    [ProducesResponseType(typeof(LoginResponse), 200)]
+    public async Task<IActionResult> DeleteUser([FromBody] Guid userId)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            _authService.DeleteUserAsync(userId);
+            return Ok(new { message = "User deleted successfully." });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    
+        
+    }
 }
