@@ -1,8 +1,14 @@
 using System.Text.Json;
+using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
+using HomeSellerServer.Service;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddTransient<IRabbitMqProducer, RabbitMqProducer>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("NpgsqlConnection"));

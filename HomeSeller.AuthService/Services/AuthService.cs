@@ -1,7 +1,7 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using HomeSeller.Shared;
 using HomeSellerServer.DTO;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
@@ -11,16 +11,17 @@ namespace HomeSellerServer.Service
 {
     public class AuthService : IAuthService
     {
-   
         private readonly IHashPassword _hashPassword;
         private readonly IUserStore _userStore;
+        private readonly IRabbitMqProducer _rabbitMqProducer;
 
-        public AuthService(IHashPassword hashPassword, IUserStore userStore)
+        public AuthService(IHashPassword hashPassword, IUserStore userStore, IRabbitMqProducer rabbitMqProducer)
         {
-        
+            _hashPassword = hashPassword;
             _hashPassword = hashPassword;
             _userStore = userStore;
         }
+
         async Task<RegisterResponse> IAuthService.RegisterAsync(RegisterRequest registerRequest)
         {
             var exists = await _userStore.ExistsByLoginAsync(registerRequest.Login);
@@ -30,22 +31,25 @@ namespace HomeSellerServer.Service
             }
 
             var hashpassword = await _hashPassword.HashPasswordAsync(registerRequest.Password);
-       
+
             var user = new Users
             {
                 Login = registerRequest.Login,
                 HashPassword = hashpassword
             };
             await _userStore.AddAsync(user);
-
+            await _rabbitMqProducer.PublishAsync("user.registered", new UserRegisteredEvent
+            {
+                UserId = user.Id,
+                Login = user.Login,
+            });
             return new RegisterResponse
             {
                 Login = user.Login,
                 UserId = user.Id,
-       
             };
-
         }
+
         async Task<LoginResponse> IAuthService.LoginAsync(LoginRequest loginRequest)
         {
             var user = await _userStore.GetByLoginAsync(loginRequest.Login);
@@ -53,9 +57,10 @@ namespace HomeSellerServer.Service
             {
                 throw new Exception("User not found.");
             }
-            var hashpaswword =await _hashPassword.VerifyPasswordAsync(loginRequest.Password, user.HashPassword);
 
-            if(!hashpaswword)
+            var hashpaswword = await _hashPassword.VerifyPasswordAsync(loginRequest.Password, user.HashPassword);
+
+            if (!hashpaswword)
             {
                 throw new Exception("Invalid login or password.");
             }
@@ -64,7 +69,6 @@ namespace HomeSellerServer.Service
             {
                 Login = user.Login,
                 UserId = user.Id,
-             
             };
         }
 
@@ -76,14 +80,15 @@ namespace HomeSellerServer.Service
                 throw new Exception("User not found.");
             }
 
-     
-            var isCurrentPasswordValid = await _hashPassword.VerifyPasswordAsync(request.CurrentPassword, user.HashPassword);
+
+            var isCurrentPasswordValid =
+                await _hashPassword.VerifyPasswordAsync(request.CurrentPassword, user.HashPassword);
             if (!isCurrentPasswordValid)
             {
                 throw new Exception("Invalid current password.");
             }
 
-     
+
             user.HashPassword = await _hashPassword.HashPasswordAsync(request.NewPassword);
 
 
