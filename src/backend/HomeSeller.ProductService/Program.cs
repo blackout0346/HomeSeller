@@ -4,6 +4,7 @@ using HomeSellerServer.Service;
 using HomeSellerServer.StoreService;
 using Microsoft.EntityFrameworkCore;
 
+DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHostedService<UserSyncConsumer>();
 builder.Services.AddTransient<IProductStore, ProductStore>();
