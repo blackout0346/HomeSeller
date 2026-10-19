@@ -15,7 +15,7 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
+        modelBuilder.HasDefaultSchema("SellShop.Auth");
         modelBuilder.Entity<Role>().HasData(
 
             new Role { Id = SellerRoleId, RoleName = "Seller" },

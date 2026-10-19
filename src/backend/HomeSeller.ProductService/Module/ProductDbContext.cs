@@ -15,7 +15,7 @@ public class ProductDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
+        modelBuilder.HasDefaultSchema("SellShop.Product");
        
 
         modelBuilder.Entity<Tags>(entity =>
