@@ -1,11 +1,13 @@
 ﻿using HomeSellerServer.DTO.Products;
 using HomeSellerServer.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HomeSellerServer.Controllers;
 
 [Route("api/Product")]
 [ApiController]
+[Authorize]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;

@@ -14,12 +14,13 @@ namespace HomeSellerServer.Service
         private readonly IHashPassword _hashPassword;
         private readonly IUserStore _userStore;
         private readonly IRabbitMqProducer _rabbitMqProducer;
-
-        public AuthService(IHashPassword hashPassword, IUserStore userStore, IRabbitMqProducer rabbitMqProducer)
+        private readonly IJwtTokenGenerator _tokenService;
+        public AuthService(IHashPassword hashPassword, IUserStore userStore, IRabbitMqProducer rabbitMqProducer, IJwtTokenGenerator tokenService)
         {
             _rabbitMqProducer = rabbitMqProducer;
             _hashPassword = hashPassword;
             _userStore = userStore;
+            _tokenService = tokenService; 
         }
 
         async Task<RegisterResponse> IAuthService.RegisterAsync(RegisterRequest registerRequest)
@@ -35,7 +36,8 @@ namespace HomeSellerServer.Service
             var user = new Users
             {
                 Login = registerRequest.Login,
-                HashPassword = hashpassword
+                HashPassword = hashpassword,
+                RoleId = AppDbContext.BuyerRoleId
             };
             await _userStore.AddAsync(user);
             await _rabbitMqProducer.PublishAsync("user.registered", new UserRegisteredEvent
@@ -47,6 +49,7 @@ namespace HomeSellerServer.Service
             {
                 Login = user.Login,
                 UserId = user.Id,
+                Token =  _tokenService.GenerateToken(user)
             };
         }
 
@@ -69,6 +72,7 @@ namespace HomeSellerServer.Service
             {
                 Login = user.Login,
                 UserId = user.Id,
+                Token =   _tokenService.GenerateToken(user)
             };
         }
 

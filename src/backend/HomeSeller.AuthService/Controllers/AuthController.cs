@@ -25,6 +25,7 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.RegisterAsync(request);
+            Console.WriteLine($"register result: {result.Token}{result.Login}");
             return Ok(result); 
         }
         catch (AuthenticationException ex)
@@ -43,6 +44,7 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.LoginAsync(request);
+            Console.WriteLine($"login result: {result.Token}{result.Login}");
             return Ok(result); 
         }
         catch (AuthenticationException)

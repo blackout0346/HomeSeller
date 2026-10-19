@@ -20,6 +20,7 @@ public class UserSyncConsumer : BackgroundService
         IServiceProvider serviceProvider,
         IConfiguration config)
     {
+ 
         _serviceProvider = serviceProvider;
         _config = config;
     }
