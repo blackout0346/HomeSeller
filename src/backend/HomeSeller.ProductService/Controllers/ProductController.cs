@@ -96,7 +96,7 @@ public class ProductController : ControllerBase
         }
         
     }
-    [HttpDelete("DeleteProduct")]
+    [HttpDelete("DeleteProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> DeleteProduct(Guid productId )
     {

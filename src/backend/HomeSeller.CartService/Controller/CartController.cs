@@ -1,6 +1,9 @@
-﻿namespace HomeSeller.CartService.Controller;
+﻿using Microsoft.AspNetCore.Mvc;
 
-public class CartController
+namespace HomeSeller.CartService.Controller;
+[Route("api/cart")]
+[ApiController]
+public class CartController: ControllerBase
 {
     
 }
