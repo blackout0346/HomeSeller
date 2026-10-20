@@ -1,5 +1,9 @@
 <Solution>
   <Project Path="HomeSeller.AuthService/HomeSeller.AuthService.csproj" />
+  <Project Path="HomeSeller.CartService/HomeSeller.CartService.csproj" />
+  <Project Path="HomeSeller.Messenger/HomeSeller.Messenger.csproj" />
+  <Project Path="HomeSeller.Notification/HomeSeller.Notification.csproj" />
   <Project Path="HomeSeller.ProductService/HomeSeller.ProductService.csproj" />
   <Project Path="HomeSeller.Shared/HomeSeller.Shared.csproj" />
+  <Project Path="HomeSeller.UserService/HomeSeller.UserService.csproj" />
 </Solution>
