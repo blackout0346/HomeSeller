@@ -1,11 +1,13 @@
 ﻿using HomeSellerServer.DTO.Products;
 using HomeSellerServer.Interface;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeSellerServer.Controllers;
 
 [Route("api/Product")]
 [ApiController]
+[EnableRateLimiting("sliding_window")]
 public class ProductController : ControllerBase
 {
     private readonly IProductService _productService;
