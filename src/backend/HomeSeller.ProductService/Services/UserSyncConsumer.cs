@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace HomeSellerServer.Service;
+namespace ProductService.Services;
 
 public class UserSyncConsumer : BackgroundService
 {
@@ -58,7 +58,7 @@ public class UserSyncConsumer : BackgroundService
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
         consumer.ReceivedAsync += async (_, ea) =>
-        {
+        {     var internalToken = CancellationToken.None; 
             try
             {
                 var json = Encoding.UTF8.GetString(
@@ -75,7 +75,7 @@ public class UserSyncConsumer : BackgroundService
                         ea.DeliveryTag,
                         multiple: false,
                         requeue: false,
-                        cancellationToken: stoppingToken);
+                        cancellationToken: internalToken);
 
                     return;
                 }
@@ -88,20 +88,20 @@ public class UserSyncConsumer : BackgroundService
 
                 var products = await dbContext.Products
                     .Where(p => p.UserId == userEvent.UserId)
-                    .ToListAsync(stoppingToken);
+                    .ToListAsync(internalToken);
 
                 foreach (var product in products)
                 {
                     product.isDeleted = true;
                 }
 
-                await dbContext.SaveChangesAsync(stoppingToken);
+                await dbContext.SaveChangesAsync(internalToken);
 
 
                 await _channel.BasicAckAsync(
                     ea.DeliveryTag,
                     multiple: false,
-                    cancellationToken: stoppingToken);
+                    cancellationToken: internalToken);
             }
             catch (Exception ex)
             {
@@ -109,7 +109,7 @@ public class UserSyncConsumer : BackgroundService
                     ea.DeliveryTag,
                     multiple: false,
                     requeue: true,
-                    cancellationToken: stoppingToken);
+                    cancellationToken: internalToken);
             }
         };
 
@@ -119,16 +119,12 @@ public class UserSyncConsumer : BackgroundService
             consumer: consumer,
             cancellationToken: stoppingToken);
     }
-
-    public override async Task StopAsync(
-        CancellationToken stoppingToken)
+    public override void Dispose()
     {
-        if (_channel != null)
-            await _channel.CloseAsync(stoppingToken);
-
-        if (_connection != null)
-            await _connection.CloseAsync(stoppingToken);
-
-        await base.StopAsync(stoppingToken);
+     
+        _channel?.Dispose();
+        _connection?.Dispose();
+        base.Dispose();
     }
+   
 }

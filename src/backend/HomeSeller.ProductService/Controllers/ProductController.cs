@@ -1,4 +1,5 @@
-﻿using HomeSellerServer.DTO.Products;
+﻿using System.Security.Claims;
+using HomeSellerServer.DTO.Products;
 using HomeSellerServer.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +17,10 @@ public class ProductController : ControllerBase
     {
         _productService = productService;
     }
+
     [HttpGet("GetProduct{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
-    public async Task<IActionResult> GetByIdProduct(Guid productId)
+    public async Task<IActionResult> GetByIdProduct([FromRoute] Guid productId)
     {
         if (!ModelState.IsValid)
         {
@@ -34,11 +36,11 @@ public class ProductController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
-        
     }
+
     [HttpGet("GetProducts")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
-    public async Task<IActionResult> GetAllProducts(  [FromQuery]  string? search  = null)
+    public async Task<IActionResult> GetAllProducts([FromQuery] string? search = null)
     {
         if (!ModelState.IsValid)
         {
@@ -54,8 +56,8 @@ public class ProductController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
-        
     }
+
     [HttpPost("AddProduct")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> AddProduct([FromBody] ProductsRequest request)
@@ -67,18 +69,19 @@ public class ProductController : ControllerBase
 
         try
         {
-            var result = await _productService.CreateProductAsync(request);
+            var userId = GetUserId();
+            var result = await _productService.CreateProductAsync(userId, request);
             return Ok(result);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
-        
     }
+
     [HttpPut("UpdateProduct{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
-    public async Task<IActionResult> UpdateProduct(Guid productId,[FromBody] ProductsRequest request )
+    public async Task<IActionResult> UpdateProduct([FromRoute] Guid productId, [FromBody] ProductsRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -87,18 +90,19 @@ public class ProductController : ControllerBase
 
         try
         {
-            var result = await _productService.UpdateProductsAsync(productId,request);
+            var userId = GetUserId();
+            var result = await _productService.UpdateProductsAsync(userId, productId, request);
             return Ok(result);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
-        
     }
+
     [HttpDelete("DeleteProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
-    public async Task<IActionResult> DeleteProduct(Guid productId )
+    public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)
     {
         if (!ModelState.IsValid)
         {
@@ -107,13 +111,27 @@ public class ProductController : ControllerBase
 
         try
         {
-            var result = await _productService.DeleteProductsAsync(productId);
+            var userId = GetUserId();
+            var result = await _productService.DeleteProductsAsync(userId, productId);
             return Ok(result);
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
         }
-        
+    }
+
+    private Guid GetUserId()
+    {
+        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                      ?? User.FindFirst("sub")?.Value
+                      ?? User.FindFirst("id")?.Value;
+
+        if (string.IsNullOrEmpty(idClaim) || !Guid.TryParse(idClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("Идентификатор пользователя не найден в токене.");
+        }
+
+        return userId;
     }
 }

@@ -7,9 +7,9 @@ public interface IProductStore
 {
     public Task<IEnumerable<Products>>  GetProducts(string? search=null);
     public Task<Products?> GetProductsIdAsync(Guid id);
-    public Task DeleteProductAsync(Guid id);
-    public Task ProductsAddAsync(Products products);
+    public Task<bool> DeleteProductAsync(Guid UserId,Guid productId);
+    public Task ProductsAddAsync(Guid UserId,Products products);
     
-    public Task ProductsUpdateAsync(Products products);
+    public Task ProductsUpdateAsync(Guid UserId,Products products);
     
 }

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using HomeSeller.Shared;
+﻿using HomeSeller.Shared;
 using HomeSellerServer.DTO;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 
-
-namespace HomeSellerServer.Service
+namespace HomeSellerServer.Services
 {
     public class AuthService : IAuthService
     {

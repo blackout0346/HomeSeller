@@ -1,15 +1,15 @@
 using System.Text.Json;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
-using HomeSellerServer.Service;
 using HomeSellerServer.StoreService;
 using Microsoft.EntityFrameworkCore;
+using ProductService.Services;
 
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHostedService<UserSyncConsumer>();
 builder.Services.AddTransient<IProductStore, ProductStore>();
-builder.Services.AddTransient<IProductService, HomeSellerServer.Service.ProductService>();
+builder.Services.AddTransient<IProductService, ProductService.Services.ProductService>();
 
 
 builder.Services.AddDbContext<ProductDbContext>(options =>

@@ -1,10 +1,9 @@
 ﻿using System.Text;
 using System.Text.Json;
 using HomeSellerServer.Interface;
-using Microsoft.EntityFrameworkCore.Metadata;
 using RabbitMQ.Client;
 
-namespace HomeSellerServer.Service;
+namespace HomeSellerServer.Services;
 
 public class RabbitMqProducer : IRabbitMqProducer, IAsyncDisposable
 {

@@ -2,7 +2,7 @@
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 
-namespace HomeSellerServer.Service;
+namespace ProductService.Services;
 
 public class ProductService : IProductService
 {
@@ -28,9 +28,9 @@ public class ProductService : IProductService
         return product == null ? null : MapToResponse(product);
     }
 
-
-    public async Task<ProductsResponse> CreateProductAsync(ProductsRequest request)
+    public async Task<ProductsResponse> CreateProductAsync(Guid userId, ProductsRequest request)
     {
+        
         var newProductId = Guid.NewGuid();
 
         var product = new Products
@@ -50,18 +50,16 @@ public class ProductService : IProductService
             }).ToList() ?? new List<ProductTag>()
         };
 
-        await _productStore.ProductsAddAsync(product);
+        await _productStore.ProductsAddAsync( userId,product);
 
      
         var createdProduct = await _productStore.GetProductsIdAsync(product.Id);
         return MapToResponse(createdProduct ?? product);
     }
 
-
-    public async Task<ProductsResponse?> UpdateProductsAsync(Guid id, ProductsRequest request)
+    public async Task<ProductsResponse?> UpdateProductsAsync(Guid userId, Guid productid, ProductsRequest request)
     {
-
-        var existing = await _productStore.GetProductsIdAsync(id);
+        var existing = await _productStore.GetProductsIdAsync(productid);
         if (existing == null)
         {
             return null; 
@@ -69,7 +67,7 @@ public class ProductService : IProductService
 
         var productToUpdate = new Products
         {
-            Id = id,
+            Id = productid,
             NameProduct = request.NameProduct,
             Description = request.Description,
             Price = request.Price,
@@ -78,32 +76,30 @@ public class ProductService : IProductService
             ProductTags = request.TagIds?.Select(tagId => new ProductTag
             {
                 Id = Guid.NewGuid(),
-                ProductId = id,
+                ProductId = productid,
                 TagId = tagId
             }).ToList() ?? new List<ProductTag>()
         };
 
-        await _productStore.ProductsUpdateAsync(productToUpdate);
+        await _productStore.ProductsUpdateAsync(userId,productToUpdate);
 
      
-        var updatedProduct = await _productStore.GetProductsIdAsync(id);
+        var updatedProduct = await _productStore.GetProductsIdAsync(productid);
         return updatedProduct == null ? null : MapToResponse(updatedProduct);
     }
 
-  
-    public async Task<bool> DeleteProductsAsync(Guid id)
+    public async Task<bool> DeleteProductsAsync(Guid userId, Guid productid)
     {
-        var existing = await _productStore.GetProductsIdAsync(id);
+        var existing = await _productStore.GetProductsIdAsync(productid);
         if (existing == null)
         {
             return false;
         }
 
-        await _productStore.DeleteProductAsync(id);
+        await _productStore.DeleteProductAsync(userId, productid);
         return true;
     }
-
-   
+    
     private static ProductsResponse MapToResponse(Products products) => new()
     {
         Id = products.Id,

@@ -39,28 +39,34 @@ public class ProductStore : IProductStore
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    public async Task DeleteProductAsync(Guid id)
+    public async Task<bool> DeleteProductAsync(Guid UserId, Guid productId)
     {
-        var product = await dbcontext.Products.FirstOrDefaultAsync(p => p.Id == id);
+        var product = await dbcontext.Products.FirstOrDefaultAsync(p => p.Id == productId && p.UserId == UserId);
         if (product != null)
         {
             product.isDeleted = true;
             await dbcontext.SaveChangesAsync();
+            return true;
+        }
+        return false;
+    }
+
+    public async Task ProductsAddAsync(Guid UserId, Products products)
+    {
+        var product = await dbcontext.Products.FirstOrDefaultAsync(p => p.UserId == UserId);
+        if (product != null)
+        {
+            products.CreateAt = DateTime.UtcNow;
+            await dbcontext.Products.AddAsync(products);
+            await dbcontext.SaveChangesAsync();
         }
     }
 
-    public async Task ProductsAddAsync(Products products)
-    {
-        products.CreateAt = DateTime.UtcNow;
-        await dbcontext.Products.AddAsync(products);
-        await dbcontext.SaveChangesAsync();
-    }
-
-    public async Task ProductsUpdateAsync(Products products)
+    public async Task ProductsUpdateAsync(Guid UserId, Products products)
     {
         var existingProduct = await dbcontext.Products
             .Include(p => p.ProductTags)
-            .FirstOrDefaultAsync(p => p.Id == products.Id);
+            .FirstOrDefaultAsync(p => p.Id == products.Id && p.UserId == UserId);
 
         if (existingProduct == null)
             return;
@@ -96,4 +102,5 @@ public class ProductStore : IProductStore
 
         await dbcontext.SaveChangesAsync();
     }
+
 }
