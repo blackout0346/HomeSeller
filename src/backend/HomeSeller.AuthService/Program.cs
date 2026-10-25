@@ -5,6 +5,7 @@ using HomeSellerServer.Module;
 using HomeSellerServer.Service;
 using HomeSellerServer.Services;
 using HomeSellerServer.StoreService;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,12 +14,23 @@ using Microsoft.IdentityModel.Tokens;
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var host =builder.Configuration["RabbitMQ:HostName"] ?? "localhost";
+        cfg.Host(host, "/", h =>
+            {
+                h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+                h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+            }
+        );
+    });
+});
 builder.Services.AddTransient<IHashPassword, HashPassword>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IUserStore, UserStore>();
 builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
-
-builder.Services.AddTransient<IRabbitMqProducer, RabbitMqProducer>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

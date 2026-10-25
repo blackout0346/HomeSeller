@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using HomeSellerServer.StoreService;
+using MassTransit;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Services;
@@ -19,9 +20,21 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 2;
     });
-
 });
-builder.Services.AddHostedService<UserSyncConsumer>();
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<UserDeleteConsumer>();
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var host = builder.Configuration["RabbitMQ:HostName"]?? "localhost";
+        cfg.Host(host, hostConfigurator =>
+        {
+            hostConfigurator.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
+            hostConfigurator.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+        });
+        cfg.ConfigureEndpoints(context);
+    });
+});
 builder.Services.AddTransient<IProductStore, ProductStore>();
 builder.Services.AddTransient<IProductService, ProductService.Services.ProductService>();
 

@@ -2,18 +2,21 @@
 using HomeSellerServer.DTO;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
+using MassTransit;
 
 namespace HomeSellerServer.Services
 {
     public class AuthService : IAuthService
     {
+       
         private readonly IHashPassword _hashPassword;
         private readonly IUserStore _userStore;
+        private readonly IPublishEndpoint _publishEndpoint;
         private readonly IRabbitMqProducer _rabbitMqProducer;
         private readonly IJwtTokenGenerator _tokenService;
-        public AuthService(IHashPassword hashPassword, IUserStore userStore, IRabbitMqProducer rabbitMqProducer, IJwtTokenGenerator tokenService)
+        public AuthService(IHashPassword hashPassword, IUserStore userStore, IPublishEndpoint publishEndpoint, IJwtTokenGenerator tokenService)
         {
-            _rabbitMqProducer = rabbitMqProducer;
+            _publishEndpoint = publishEndpoint;
             _hashPassword = hashPassword;
             _userStore = userStore;
             _tokenService = tokenService; 
@@ -36,10 +39,11 @@ namespace HomeSellerServer.Services
                 RoleId = AppDbContext.BuyerRoleId
             };
             await _userStore.AddAsync(user);
-            await _rabbitMqProducer.PublishAsync("user.registered", new UserRegisteredEvent
+            await _publishEndpoint.Publish(new UserRegisteredEvent
             {
                 UserId = user.Id,
                 Login = user.Login,
+                
             });
             return new RegisterResponse
             {
@@ -109,7 +113,11 @@ namespace HomeSellerServer.Services
             {
                 return false;
             }
-            await _rabbitMqProducer.PublishAsync("user.deleted",new UserDeletedEvent{UserId = userId});
+
+            await _publishEndpoint.Publish(new UserDeletedEvent
+            {
+                UserId = user.Id,
+            });
             return true;
         }
     }
