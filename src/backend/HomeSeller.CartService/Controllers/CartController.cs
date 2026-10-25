@@ -2,11 +2,13 @@
 using HomeSeller.CartService.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeSeller.CartService.Controllers;
 [Route("api/cart")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting("sliding_window")]
 public class CartController: ControllerBase
 {
     public readonly ICartService _cartService;
