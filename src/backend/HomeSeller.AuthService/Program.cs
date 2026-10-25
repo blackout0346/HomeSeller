@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using HomeSellerServer.Service;
@@ -6,6 +7,7 @@ using HomeSellerServer.Services;
 using HomeSellerServer.StoreService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 
 DotNetEnv.Env.TraversePath().Load();
@@ -21,6 +23,18 @@ builder.Services.AddTransient<IRabbitMqProducer, RabbitMqProducer>();
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("NpgsqlConnection"));
+});
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddSlidingWindowLimiter("sliding_window", opt =>
+    {
+        opt.PermitLimit = 100;
+        opt.Window = TimeSpan.FromSeconds(1);
+        opt.SegmentsPerWindow = 4;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
+    });
+
 });
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
