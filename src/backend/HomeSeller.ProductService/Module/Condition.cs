@@ -1,4 +1,6 @@
-﻿namespace HomeSellerServer.Module;
+﻿using HomeSellerServer.Module;
+
+namespace ProductService.Module;
 
 public class Condition
 {

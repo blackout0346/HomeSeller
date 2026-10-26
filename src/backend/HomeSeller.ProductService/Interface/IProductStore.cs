@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using HomeSellerServer.Module;
+using ProductService.Module;
+
 namespace HomeSellerServer.Interface;
 
 public interface IProductStore

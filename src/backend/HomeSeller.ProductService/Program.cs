@@ -6,6 +6,7 @@ using HomeSellerServer.StoreService;
 using MassTransit;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using ProductService.Module;
 using ProductService.Services;
 
 DotNetEnv.Env.TraversePath().Load();

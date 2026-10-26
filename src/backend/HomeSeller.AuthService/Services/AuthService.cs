@@ -1,4 +1,5 @@
 ﻿using HomeSeller.Shared;
+using HomeSeller.Shared.EventUser;
 using HomeSellerServer.DTO;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
@@ -12,7 +13,7 @@ namespace HomeSellerServer.Services
         private readonly IHashPassword _hashPassword;
         private readonly IUserStore _userStore;
         private readonly IPublishEndpoint _publishEndpoint;
-        private readonly IRabbitMqProducer _rabbitMqProducer;
+       
         private readonly IJwtTokenGenerator _tokenService;
         public AuthService(IHashPassword hashPassword, IUserStore userStore, IPublishEndpoint publishEndpoint, IJwtTokenGenerator tokenService)
         {
@@ -68,6 +69,12 @@ namespace HomeSellerServer.Services
                 throw new Exception("Invalid login or password.");
             }
 
+            await _publishEndpoint.Publish(new UserLoginEvent()
+            {
+                UserId = user.Id,
+                Login = loginRequest.Login,
+                
+            });
             return new LoginResponse
             {
                 Login = user.Login,
@@ -97,7 +104,11 @@ namespace HomeSellerServer.Services
 
 
             await _userStore.UpdateUserAsync(user);
-
+            await _publishEndpoint.Publish(new UserChangePasswordEvent()
+            {
+                UserId =  user.Id,
+                Login = user.Login,
+            });
             return true;
         }
 

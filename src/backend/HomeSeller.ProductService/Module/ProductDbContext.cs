@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ProductService.Module;
 
 namespace HomeSellerServer.Module;
 

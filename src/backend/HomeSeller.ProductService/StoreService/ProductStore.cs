@@ -1,6 +1,7 @@
 ﻿using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using Microsoft.EntityFrameworkCore;
+using ProductService.Module;
 
 namespace HomeSellerServer.StoreService;
 

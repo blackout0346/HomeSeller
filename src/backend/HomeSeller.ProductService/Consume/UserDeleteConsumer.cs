@@ -1,4 +1,5 @@
 ﻿using HomeSeller.Shared;
+using HomeSeller.Shared.EventUser;
 using HomeSellerServer.Module;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;

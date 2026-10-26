@@ -1,4 +1,4 @@
-﻿namespace HomeSellerServer.Module;
+﻿namespace ProductService.Module;
 
 public class Tags
 {

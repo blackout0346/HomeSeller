@@ -1,4 +1,4 @@
-﻿namespace HomeSeller.Shared;
+﻿namespace HomeSeller.Shared.EventUser;
 
 public class UserDeletedEvent
 {

@@ -1,16 +1,20 @@
-﻿using HomeSellerServer.DTO.Products;
+﻿using HomeSeller.Shared.EventProduct;
+using HomeSellerServer.DTO.Products;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
-
+using ProductService.Module;
+using MassTransit;
 namespace ProductService.Services;
 
 public class ProductService : IProductService
 {
 
     private readonly IProductStore _productStore;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public ProductService(IProductStore productStore)
+    public ProductService(IProductStore productStore, IPublishEndpoint publishEndpoint)
     {
+        _publishEndpoint = publishEndpoint;
         _productStore = productStore;
     }
 
@@ -49,10 +53,15 @@ public class ProductService : IProductService
                 TagId = tagId
             }).ToList() ?? new List<ProductTag>()
         };
+        await  _publishEndpoint.Publish(new ProductCreatedEvent()
+        {
+            ProductId = newProductId,
+            UserId = request.UserId,
+            CreateAt = DateTime.UtcNow,
+        });
 
         await _productStore.ProductsAddAsync( userId,product);
-
-     
+   
         var createdProduct = await _productStore.GetProductsIdAsync(product.Id);
         return MapToResponse(createdProduct ?? product);
     }
@@ -80,9 +89,14 @@ public class ProductService : IProductService
                 TagId = tagId
             }).ToList() ?? new List<ProductTag>()
         };
-
+        await _publishEndpoint.Publish(new ProductUpdatedEvent()
+        {
+            ProductId = productid,
+            UserId = request.UserId,
+            UpdateAt = DateTime.UtcNow,
+        });
         await _productStore.ProductsUpdateAsync(userId,productToUpdate);
-
+   
      
         var updatedProduct = await _productStore.GetProductsIdAsync(productid);
         return updatedProduct == null ? null : MapToResponse(updatedProduct);
@@ -95,8 +109,14 @@ public class ProductService : IProductService
         {
             return false;
         }
-
+        await _publishEndpoint.Publish(new ProductDeletedEvent()
+        {
+            ProductId = productid,
+            UserId = userId,
+            DeleteAt = DateTime.UtcNow,
+        });
         await _productStore.DeleteProductAsync(userId, productid);
+        
         return true;
     }
     
