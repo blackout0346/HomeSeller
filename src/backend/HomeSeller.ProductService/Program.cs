@@ -2,12 +2,12 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
-using HomeSellerServer.StoreService;
 using MassTransit;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Module;
 using ProductService.Services;
+using ProductService.StoreService;
 
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);

@@ -4,11 +4,11 @@ using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using ProductService.Module;
 using MassTransit;
+
 namespace ProductService.Services;
 
 public class ProductService : IProductService
 {
-
     private readonly IProductStore _productStore;
     private readonly IPublishEndpoint _publishEndpoint;
 
@@ -25,7 +25,7 @@ public class ProductService : IProductService
         return products.Select(MapToResponse);
     }
 
-  
+
     public async Task<ProductsResponse?> GetProductByIdAsync(Guid id)
     {
         var product = await _productStore.GetProductsIdAsync(id);
@@ -34,7 +34,6 @@ public class ProductService : IProductService
 
     public async Task<ProductsResponse> CreateProductAsync(Guid userId, ProductsRequest request)
     {
-        
         var newProductId = Guid.NewGuid();
 
         var product = new Products
@@ -46,6 +45,13 @@ public class ProductService : IProductService
             ConditionId = request.ConditionId,
             UserId = request.UserId,
             CreateAt = DateTime.UtcNow,
+            ImageURLs = request.ImageURLs.Where(img => !string.IsNullOrWhiteSpace(img)).Select(img => new ProductImage
+            {
+                Id = Guid.NewGuid(),
+                ProductId = newProductId,
+                ImageURL = img.Trim()
+            }).ToList() ?? new List<ProductImage>(),
+
             ProductTags = request.TagIds?.Select(tagId => new ProductTag
             {
                 Id = Guid.NewGuid(),
@@ -53,15 +59,15 @@ public class ProductService : IProductService
                 TagId = tagId
             }).ToList() ?? new List<ProductTag>()
         };
-        await  _publishEndpoint.Publish(new ProductCreatedEvent()
+
+        await _productStore.ProductsAddAsync(userId, product);
+        await _publishEndpoint.Publish(new ProductCreatedEvent()
         {
             ProductId = newProductId,
             UserId = request.UserId,
             CreateAt = DateTime.UtcNow,
         });
 
-        await _productStore.ProductsAddAsync( userId,product);
-   
         var createdProduct = await _productStore.GetProductsIdAsync(product.Id);
         return MapToResponse(createdProduct ?? product);
     }
@@ -71,7 +77,7 @@ public class ProductService : IProductService
         var existing = await _productStore.GetProductsIdAsync(productid);
         if (existing == null)
         {
-            return null; 
+            return null;
         }
 
         var productToUpdate = new Products
@@ -81,7 +87,14 @@ public class ProductService : IProductService
             Description = request.Description,
             Price = request.Price,
             ConditionId = request.ConditionId,
-            UserId = existing.UserId, 
+            UserId = existing.UserId,
+            ImageURLs = request.ImageURLs.Where(img => !string.IsNullOrWhiteSpace(img)).Select(img => new ProductImage
+            {
+                Id = Guid.NewGuid(),
+                ProductId = productid,
+                ImageURL = img.Trim()
+            }).ToList() ?? new List<ProductImage>(),
+
             ProductTags = request.TagIds?.Select(tagId => new ProductTag
             {
                 Id = Guid.NewGuid(),
@@ -89,15 +102,15 @@ public class ProductService : IProductService
                 TagId = tagId
             }).ToList() ?? new List<ProductTag>()
         };
+
+        await _productStore.ProductsUpdateAsync(userId, productToUpdate);
+
         await _publishEndpoint.Publish(new ProductUpdatedEvent()
         {
             ProductId = productid,
             UserId = request.UserId,
             UpdateAt = DateTime.UtcNow,
         });
-        await _productStore.ProductsUpdateAsync(userId,productToUpdate);
-   
-     
         var updatedProduct = await _productStore.GetProductsIdAsync(productid);
         return updatedProduct == null ? null : MapToResponse(updatedProduct);
     }
@@ -109,6 +122,7 @@ public class ProductService : IProductService
         {
             return false;
         }
+
         await _publishEndpoint.Publish(new ProductDeletedEvent()
         {
             ProductId = productid,
@@ -116,10 +130,16 @@ public class ProductService : IProductService
             DeleteAt = DateTime.UtcNow,
         });
         await _productStore.DeleteProductAsync(userId, productid);
-        
+
         return true;
     }
-    
+
+    public async Task<IEnumerable<ProductsResponse>> GetProductsByIdsAsync(IEnumerable<Guid> ids)
+    {
+        var products = await _productStore.GetProductsByIdsAsync(ids);
+        return products.Select(MapToResponse);
+    }
+
     private static ProductsResponse MapToResponse(Products products) => new()
     {
         Id = products.Id,
@@ -127,6 +147,7 @@ public class ProductService : IProductService
         CreateAt = products.CreateAt,
         Description = products.Description,
         Price = products.Price,
+        ImageURLs = products.ImageURLs?.Select(img => img.ImageURL).ToList() ?? new List<string>(),
         NameProduct = products.NameProduct,
         ConditionId = products.ConditionId,
         NameCondition = products.Condition?.NameCondition ?? string.Empty,

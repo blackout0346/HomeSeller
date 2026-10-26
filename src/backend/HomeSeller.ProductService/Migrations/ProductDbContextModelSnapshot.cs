@@ -23,7 +23,7 @@ namespace ProductService.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("HomeSellerServer.Module.Condition", b =>
+            modelBuilder.Entity("ProductService.Module.Condition", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -38,7 +38,30 @@ namespace ProductService.Migrations
                     b.ToTable("Condition", "SellShop.Product");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.ProductTag", b =>
+            modelBuilder.Entity("ProductService.Module.ProductImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ImageURL")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductsId");
+
+                    b.ToTable("ProductImage", "SellShop.Product");
+                });
+
+            modelBuilder.Entity("ProductService.Module.ProductTag", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -60,7 +83,7 @@ namespace ProductService.Migrations
                     b.ToTable("ProductTags", "SellShop.Product");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Products", b =>
+            modelBuilder.Entity("ProductService.Module.Products", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -96,7 +119,7 @@ namespace ProductService.Migrations
                     b.ToTable("Products", "SellShop.Product");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Tags", b =>
+            modelBuilder.Entity("ProductService.Module.Tags", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -116,15 +139,26 @@ namespace ProductService.Migrations
                     b.ToTable("Tags", "SellShop.Product");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.ProductTag", b =>
+            modelBuilder.Entity("ProductService.Module.ProductImage", b =>
                 {
-                    b.HasOne("HomeSellerServer.Module.Products", "Product")
+                    b.HasOne("ProductService.Module.Products", "Products")
+                        .WithMany("ImageURLs")
+                        .HasForeignKey("ProductsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("ProductService.Module.ProductTag", b =>
+                {
+                    b.HasOne("ProductService.Module.Products", "Product")
                         .WithMany("ProductTags")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HomeSellerServer.Module.Tags", "Tag")
+                    b.HasOne("ProductService.Module.Tags", "Tag")
                         .WithMany("ProductTags")
                         .HasForeignKey("TagId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -135,9 +169,9 @@ namespace ProductService.Migrations
                     b.Navigation("Tag");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Products", b =>
+            modelBuilder.Entity("ProductService.Module.Products", b =>
                 {
-                    b.HasOne("HomeSellerServer.Module.Condition", "Condition")
+                    b.HasOne("ProductService.Module.Condition", "Condition")
                         .WithMany("Products")
                         .HasForeignKey("ConditionId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -146,9 +180,9 @@ namespace ProductService.Migrations
                     b.Navigation("Condition");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Tags", b =>
+            modelBuilder.Entity("ProductService.Module.Tags", b =>
                 {
-                    b.HasOne("HomeSellerServer.Module.Tags", "ParentTag")
+                    b.HasOne("ProductService.Module.Tags", "ParentTag")
                         .WithMany("SubTags")
                         .HasForeignKey("ParentTagId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -156,17 +190,19 @@ namespace ProductService.Migrations
                     b.Navigation("ParentTag");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Condition", b =>
+            modelBuilder.Entity("ProductService.Module.Condition", b =>
                 {
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Products", b =>
+            modelBuilder.Entity("ProductService.Module.Products", b =>
                 {
+                    b.Navigation("ImageURLs");
+
                     b.Navigation("ProductTags");
                 });
 
-            modelBuilder.Entity("HomeSellerServer.Module.Tags", b =>
+            modelBuilder.Entity("ProductService.Module.Tags", b =>
                 {
                     b.Navigation("ProductTags");
 

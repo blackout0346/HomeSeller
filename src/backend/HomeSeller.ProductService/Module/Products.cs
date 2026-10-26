@@ -7,6 +7,7 @@ public class Products
 {
    
     public Guid Id { get; set; }
+    public ICollection<ProductImage> ImageURLs { get; set; }
     public string NameProduct { get; set; }
     public string Description { get; set; }
     

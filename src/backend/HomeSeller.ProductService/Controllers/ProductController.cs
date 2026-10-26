@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace HomeSellerServer.Controllers;
+namespace ProductService.Controllers;
 
 [Route("api/Product")]
 [ApiController]
@@ -20,7 +20,7 @@ public class ProductController : ControllerBase
         _productService = productService;
     }
 
-    [HttpGet("GetProduct{productId:guid}")]
+    [HttpGet("GetProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> GetByIdProduct([FromRoute] Guid productId)
     {
@@ -81,7 +81,7 @@ public class ProductController : ControllerBase
         }
     }
 
-    [HttpPut("UpdateProduct{productId:guid}")]
+    [HttpPut("UpdateProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> UpdateProduct([FromRoute] Guid productId, [FromBody] ProductsRequest request)
     {
@@ -94,6 +94,30 @@ public class ProductController : ControllerBase
         {
             var userId = GetUserId();
             var result = await _productService.UpdateProductsAsync(userId, productId, request);
+            return result == null ? NotFound() : Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+    [HttpGet("GetProductsByIds")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IEnumerable<ProductsResponse>), 200)]
+    public async Task<IActionResult> GetProductsByIds([FromQuery] List<Guid> productIds)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        try
+        {
+            if (productIds == null || productIds.Count == 0)
+            {
+                return Ok(Enumerable.Empty<ProductsResponse>());
+            }
+
+            var result = await _productService.GetProductsByIdsAsync(productIds);
             return Ok(result);
         }
         catch (Exception ex)
@@ -101,7 +125,6 @@ public class ProductController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
-
     [HttpDelete("DeleteProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)

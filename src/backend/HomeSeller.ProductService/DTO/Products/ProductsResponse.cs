@@ -10,7 +10,7 @@ public class ProductsResponse
     public decimal Price { get; set; }
     public DateTime CreateAt { get; set; }
 
-    
+    public List<string> ImageURLs{get; set;}
     public Guid ConditionId { get; set; }
     public string NameCondition { get; set; } = string.Empty;
 

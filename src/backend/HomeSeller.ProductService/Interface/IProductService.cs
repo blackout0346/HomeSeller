@@ -8,5 +8,5 @@ public interface IProductService
     Task<ProductsResponse> CreateProductAsync(Guid userId, ProductsRequest request);
     Task<ProductsResponse?> UpdateProductsAsync(Guid userId, Guid productid, ProductsRequest request);
     Task<bool> DeleteProductsAsync(Guid userId, Guid productid);
-    
+    public Task<IEnumerable<ProductsResponse>> GetProductsByIdsAsync(IEnumerable<Guid> ids);
 }

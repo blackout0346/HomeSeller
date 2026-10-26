@@ -11,7 +11,7 @@ public interface IProductStore
     public Task<Products?> GetProductsIdAsync(Guid id);
     public Task<bool> DeleteProductAsync(Guid UserId,Guid productId);
     public Task ProductsAddAsync(Guid UserId,Products products);
-    
+    public Task<IEnumerable<Products>> GetProductsByIdsAsync(IEnumerable<Guid> ids);
     public Task ProductsUpdateAsync(Guid UserId,Products products);
     
 }
