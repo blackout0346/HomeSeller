@@ -1,11 +1,24 @@
 using System.Threading.RateLimiting;
+using HomeSeller.CartService.Interfaces;
 using HomeSeller.CartService.Module;
+using HomeSeller.CartService.Services;
+using HomeSeller.CartService.StoreServices;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-
+using StackExchange.Redis;
 
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
+
+var redisHost = builder.Configuration["Redis:Host"] ?? "localhost";
+var redisPort = builder.Configuration["Redis:Port"] ?? "6379";
+var redispassword = builder.Configuration["Redis:Password"];
+var configOptions = new ConfigurationOptions
+{
+    EndPoints = { $"{redisHost}:{redisPort}" },
+    Password = string.IsNullOrEmpty(redispassword) ? "guest" : redispassword,
+    AbortOnConnectFail = false,
+};
 builder.Services.AddRateLimiter(options =>
 {
     options.AddSlidingWindowLimiter("sliding_window", opt =>
@@ -18,6 +31,10 @@ builder.Services.AddRateLimiter(options =>
     });
 
 });
+builder.Services.AddTransient<ICartStore, CartStore>();
+builder.Services.AddTransient<ICartService, CartService>();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(configOptions));
 builder.Services.AddDbContext<CartDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("NpgsqlConnection"));

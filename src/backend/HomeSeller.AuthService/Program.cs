@@ -10,10 +10,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
+var redisHost = builder.Configuration["Redis:Host"] ?? "localhost";
+var redisPort = builder.Configuration["Redis:Port"] ?? "6379";
+var redispassword = builder.Configuration["Redis:Password"];
+var configOptions = new ConfigurationOptions
+{
+    EndPoints = { $"{redisHost}:{redisPort}" },
+    Password = string.IsNullOrEmpty(redispassword) ? "guest" : redispassword,
+    AbortOnConnectFail = false,
+};
 builder.Services.AddMassTransit(x =>
 {
     x.UsingRabbitMq((context, cfg) =>
@@ -27,6 +38,7 @@ builder.Services.AddMassTransit(x =>
         );
     });
 });
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(configOptions));
 builder.Services.AddTransient<IHashPassword, HashPassword>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IUserStore, UserStore>();
@@ -64,8 +76,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 var app = builder.Build();
-app.UseAuthorization();
 app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
@@ -75,8 +87,6 @@ using (var scope = app.Services.CreateScope())
     await context.Database.MigrateAsync();
 
 }
-
-
 
 app.MapGet("/", () => "Hello World!");
 

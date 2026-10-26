@@ -8,9 +8,19 @@ using Microsoft.EntityFrameworkCore;
 using ProductService.Module;
 using ProductService.Services;
 using ProductService.StoreService;
-
+using StackExchange.Redis;
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddMemoryCache();
+var redisHost = builder.Configuration["Redis:Host"] ?? "localhost";
+var redisPort = builder.Configuration["Redis:Port"] ?? "6379";
+var redispassword = builder.Configuration["Redis:Password"];
+var configOptions = new ConfigurationOptions
+{
+    EndPoints = { $"{redisHost}:{redisPort}" },
+    Password = string.IsNullOrEmpty(redispassword) ? "guest" : redispassword,
+    AbortOnConnectFail = false,
+};
 builder.Services.AddRateLimiter(options =>
 {
     options.AddSlidingWindowLimiter("sliding_window", opt =>
@@ -36,6 +46,7 @@ builder.Services.AddMassTransit(x =>
         cfg.ConfigureEndpoints(context);
     });
 });
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(configOptions));
 builder.Services.AddTransient<IProductStore, ProductStore>();
 builder.Services.AddTransient<IProductService, ProductService.Services.ProductService>();
 
