@@ -13,6 +13,7 @@
       <PackageReference Include="MassTransit" Version="9.2.4" />
       <PackageReference Include="MassTransit.AspNetCore" Version="9.2.4" />
       <PackageReference Include="MassTransit.RabbitMQ" Version="9.2.4" />
+      <PackageReference Include="MassTransit.Redis" Version="9.2.4" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
         <PrivateAssets>all</PrivateAssets>

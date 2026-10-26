@@ -22,11 +22,12 @@ var redispassword = builder.Configuration["Redis:Password"];
 var configOptions = new ConfigurationOptions
 {
     EndPoints = { $"{redisHost}:{redisPort}" },
-    Password = string.IsNullOrEmpty(redispassword) ? "guest" : redispassword,
+    Password = redispassword,
     AbortOnConnectFail = false,
 };
 builder.Services.AddMassTransit(x =>
 {
+    
     x.UsingRabbitMq((context, cfg) =>
     {
         var host =builder.Configuration["RabbitMQ:HostName"] ?? "localhost";

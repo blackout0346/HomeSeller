@@ -1,19 +1,21 @@
-﻿using HomeSellerServer.Interface;
+﻿using System.Text.Json;
+using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using StackExchange.Redis;
 
 namespace HomeSellerServer.StoreService
 {
     public class UserStore : IUserStore
     {
-        private readonly IMemoryCache _cache;
+        private readonly IDatabase _redis;
         private readonly AppDbContext _appDbContext;
 
-        public UserStore(AppDbContext appDbContext, IMemoryCache cache)
+        public UserStore(AppDbContext appDbContext, IConnectionMultiplexer muxer)
         {
-            _cache = cache;
+            _redis = muxer.GetDatabase();
             _appDbContext = appDbContext;
         }
 
@@ -63,35 +65,30 @@ namespace HomeSellerServer.StoreService
 
         public async Task<Users?> GetByIdAsync(Guid id)
         {
-            _cache.TryGetValue(id, out Users user);
-            _cache.Set(id, user, new MemoryCacheEntryOptions().SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1)));
+          
             return await _appDbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
         }
 
         public async Task<Users?> GetByLoginAsync(string login)
         {
-            _cache.TryGetValue(login, out Users user);
-            _cache.Set(login, user, new MemoryCacheEntryOptions().SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1)));
+           
             return await _appDbContext.Users.FirstOrDefaultAsync(u => u.Login == login);
 
         }
 
-        private void UserCache(Users user)
+        private async Task SetCacheAsync(Users user)
         {
-            var options = new MemoryCacheEntryOptions()
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
-                SlidingExpiration = TimeSpan.FromMinutes(2),
-                Size = 1
-            };
-            _cache.Set($"user:id:{user.Id}", user, options);
-            _cache.Set($"user:login:{user.Login}", user, options);
+            var json = JsonSerializer.Serialize(user);
+            await _redis.StringSetAsync($"user:id{user.Id}", json, TimeSpan.FromMinutes(5));
+            await _redis.StringSetAsync($"user:login{user.Login}", json, TimeSpan.FromMinutes(5));
+            
+
         }
 
-        private void clearCache(Users user)
+        private async Task InvalidateCacheAsync(Users user)
         {
-            _cache.Remove($"user:id:{user.Id}");
-            _cache.Remove($"user:login:{user.Login}");
+            await _redis.KeyDeleteAsync($"user:id{user.Id}");
+            await _redis.KeyDeleteAsync($"user:login{user.Login}");
         }
     }
 }
