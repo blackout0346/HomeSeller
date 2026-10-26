@@ -2,7 +2,7 @@
 using HomeSellerServer.Module;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using RabbitMQ.Client;
+
 
 namespace ProductService.Services;
 
