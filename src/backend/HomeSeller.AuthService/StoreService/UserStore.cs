@@ -1,9 +1,7 @@
 ﻿using System.Text.Json;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using StackExchange.Redis;
 
 namespace HomeSellerServer.StoreService
@@ -12,6 +10,7 @@ namespace HomeSellerServer.StoreService
     {
         private readonly IDatabase _redis;
         private readonly AppDbContext _appDbContext;
+        private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
         public UserStore(AppDbContext appDbContext, IConnectionMultiplexer muxer)
         {
@@ -27,6 +26,12 @@ namespace HomeSellerServer.StoreService
 
         public async Task<bool> ExistsByLoginAsync(string login)
         {
+            var cacheKey = $"user:login:{login.ToLowerInvariant()}";
+            if (await _redis.KeyExistsAsync(cacheKey))
+            {
+                return true;
+            }
+
             return await _appDbContext.Users.AnyAsync(u => u.Login == login);
         }
 
@@ -45,6 +50,7 @@ namespace HomeSellerServer.StoreService
             existingUser.RoleId = updatedUser.RoleId;
 
             await _appDbContext.SaveChangesAsync();
+            await InvalidateCacheAsync(existingUser);
             return true;
         }
 
@@ -60,29 +66,51 @@ namespace HomeSellerServer.StoreService
 
 
             await _appDbContext.SaveChangesAsync();
+            await InvalidateCacheAsync(existingUser);
             return true;
         }
 
         public async Task<Users?> GetByIdAsync(Guid id)
         {
-          
-            return await _appDbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var cacheKey = $"user:id:{id}";
+            var cacheJson = await _redis.StringGetAsync(cacheKey);
+            if (cacheJson.HasValue)
+            {
+                return JsonSerializer.Deserialize<Users>((string)cacheJson!);
+            }
+
+            var user = await _appDbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            if (user != null)
+            {
+                await SetCacheAsync(user);
+            }
+
+            return user;
         }
 
         public async Task<Users?> GetByLoginAsync(string login)
         {
-           
-            return await _appDbContext.Users.FirstOrDefaultAsync(u => u.Login == login);
+            var cacheKey = $"user:login:{login}";
+            var cacheJson = await _redis.StringGetAsync(cacheKey);
+            if (cacheJson.HasValue)
+            {
+                return JsonSerializer.Deserialize<Users>((string)cacheJson!);
+            }
 
+            var user = await _appDbContext.Users.FirstOrDefaultAsync(u => u.Login == login);
+            if (user != null)
+            {
+                await SetCacheAsync(user);
+            }
+
+            return user;
         }
 
         private async Task SetCacheAsync(Users user)
         {
             var json = JsonSerializer.Serialize(user);
-            await _redis.StringSetAsync($"user:id{user.Id}", json, TimeSpan.FromMinutes(5));
+            await _redis.StringSetAsync($"user:id{user.Id}", json, _cacheExpiry);
             await _redis.StringSetAsync($"user:login{user.Login}", json, TimeSpan.FromMinutes(5));
-            
-
         }
 
         private async Task InvalidateCacheAsync(Users user)
