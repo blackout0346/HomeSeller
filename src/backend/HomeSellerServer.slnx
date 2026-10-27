@@ -5,5 +5,5 @@
   <Project Path="HomeSeller.Notification/HomeSeller.Notification.csproj" />
   <Project Path="HomeSeller.ProductService/HomeSeller.ProductService.csproj" />
   <Project Path="HomeSeller.Shared/HomeSeller.Shared.csproj" />
-  <Project Path="HomeSeller.UserService/HomeSeller.UserService.csproj" />
+  <Project Path="HomeSeller.ProfileService/HomeSeller.ProfileService.csproj" />
 </Solution>
