@@ -1,16 +1,21 @@
+using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ProductService.Module;
 using ProductService.Services;
 using ProductService.StoreService;
 using StackExchange.Redis;
+
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 var redisHost = builder.Configuration["Redis:Host"] ?? "localhost";
 var redisPort = builder.Configuration["Redis:Port"] ?? "6379";
@@ -46,6 +51,7 @@ builder.Services.AddMassTransit(x =>
         cfg.ConfigureEndpoints(context);
     });
 });
+
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(configOptions));
 builder.Services.AddTransient<IProductStore, ProductStore>();
 builder.Services.AddTransient<IProductService, ProductService.Services.ProductService>();
@@ -56,8 +62,25 @@ builder.Services.AddDbContext<ProductDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("NpgsqlConnection"));
 });
 
-
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],     
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+        ClockSkew = TimeSpan.Zero 
+    };
+});
 var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ProductDbContext>();

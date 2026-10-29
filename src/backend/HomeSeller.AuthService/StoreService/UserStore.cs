@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using HomeSeller.Shared.CacheHelper;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace HomeSellerServer.StoreService
     public class UserStore : IUserStore
     {
         private readonly IDatabase _redis;
+        private readonly ILogger<UserStore> _logger;
+        private readonly TimeSpan? _cacheExpiry = TimeSpan.FromHours(2);
         private readonly AppDbContext _appDbContext;
-        private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
-        public UserStore(AppDbContext appDbContext, IConnectionMultiplexer muxer)
+
+        public UserStore(AppDbContext appDbContext, ILogger<UserStore> logger, IConnectionMultiplexer muxer)
         {
             _redis = muxer.GetDatabase();
             _appDbContext = appDbContext;
@@ -26,12 +29,6 @@ namespace HomeSellerServer.StoreService
 
         public async Task<bool> ExistsByLoginAsync(string login)
         {
-            var cacheKey = $"user:login:{login.ToLowerInvariant()}";
-            if (await _redis.KeyExistsAsync(cacheKey))
-            {
-                return true;
-            }
-
             return await _appDbContext.Users.AnyAsync(u => u.Login == login);
         }
 
@@ -50,7 +47,7 @@ namespace HomeSellerServer.StoreService
             existingUser.RoleId = updatedUser.RoleId;
 
             await _appDbContext.SaveChangesAsync();
-            await InvalidateCacheAsync(existingUser);
+            await CacheHelper.InvalidateCacheAsync(_redis, _logger, "user:id");
             return true;
         }
 
@@ -66,23 +63,18 @@ namespace HomeSellerServer.StoreService
 
 
             await _appDbContext.SaveChangesAsync();
-            await InvalidateCacheAsync(existingUser);
+            await CacheHelper.InvalidateCacheAsync(_redis, _logger, "user:id");
             return true;
         }
 
         public async Task<Users?> GetByIdAsync(Guid id)
         {
             var cacheKey = $"user:id:{id}";
-            var cacheJson = await _redis.StringGetAsync(cacheKey);
-            if (cacheJson.HasValue)
-            {
-                return JsonSerializer.Deserialize<Users>((string)cacheJson!);
-            }
-
+            await CacheHelper.GetCacheAsync<Users>(_redis, _logger, cacheKey);
             var user = await _appDbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user != null)
             {
-                await SetCacheAsync(user);
+                await CacheHelper.SetCacheAsync<Users?>(_redis, _logger, user, cacheKey, _cacheExpiry);
             }
 
             return user;
@@ -91,49 +83,15 @@ namespace HomeSellerServer.StoreService
         public async Task<Users?> GetByLoginAsync(string login)
         {
             var cacheKey = $"user:login:{login}";
-            var cacheJson = await _redis.StringGetAsync(cacheKey);
-            if (cacheJson.HasValue)
-            {
-                return JsonSerializer.Deserialize<Users>((string)cacheJson!);
-            }
+            await CacheHelper.GetCacheAsync<Users?>(_redis, _logger, cacheKey);
 
             var user = await _appDbContext.Users.FirstOrDefaultAsync(u => u.Login == login);
             if (user != null)
             {
-                await SetCacheAsync(user);
+                await CacheHelper.SetCacheAsync<Users?>(_redis, _logger, user, cacheKey, _cacheExpiry);
             }
 
             return user;
-        }
-
-        private async Task SetCacheAsync(Users user)
-        {
-            try
-            {
-                var json = JsonSerializer.Serialize(user);
-                await _redis.StringSetAsync($"user:id{user.Id}", json, _cacheExpiry);
-                await _redis.StringSetAsync($"user:login{user.Login}", json, _cacheExpiry);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-           
-        }
-
-        private async Task InvalidateCacheAsync(Users user)
-        {
-            try
-            {
-                await _redis.KeyDeleteAsync($"user:id{user.Id}");
-                await _redis.KeyDeleteAsync($"user:login{user.Login}");
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-          
         }
     }
 }

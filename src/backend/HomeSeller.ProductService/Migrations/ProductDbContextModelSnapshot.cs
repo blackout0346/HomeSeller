@@ -51,12 +51,9 @@ namespace ProductService.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductsId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductsId");
+                    b.HasIndex("ProductId");
 
                     b.ToTable("ProductImage", "SellShop.Product");
                 });
@@ -143,7 +140,7 @@ namespace ProductService.Migrations
                 {
                     b.HasOne("ProductService.Module.Products", "Products")
                         .WithMany("ImageURLs")
-                        .HasForeignKey("ProductsId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

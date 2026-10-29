@@ -21,6 +21,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("GetProduct/{productId:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> GetByIdProduct([FromRoute] Guid productId)
     {
@@ -41,6 +42,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("GetProducts")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> GetAllProducts([FromQuery] string? search = null)
     {
@@ -103,7 +105,7 @@ public class ProductController : ControllerBase
     }
     [HttpGet("GetProductsByIds")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(IEnumerable<ProductsResponse>), 200)]
+     [ProducesResponseType(typeof(IEnumerable<ProductsResponse>), 200)]
     public async Task<IActionResult> GetProductsByIds([FromQuery] List<Guid> productIds)
     {
         if (!ModelState.IsValid)

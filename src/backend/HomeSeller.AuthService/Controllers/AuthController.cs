@@ -9,7 +9,7 @@ namespace HomeSellerServer.Controllers;
 
 [Route("api/auth")]
 [ApiController]
-[Authorize]
+
 [EnableRateLimiting("sliding_window")]
 public class AuthController : ControllerBase
 {

@@ -1,15 +1,20 @@
+using System.Text;
 using System.Threading.RateLimiting;
 using HomeSeller.CartService.Interfaces;
 using HomeSeller.CartService.Module;
 using HomeSeller.CartService.Services;
 using HomeSeller.CartService.StoreServices;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
+
 
 DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
 var redisHost = builder.Configuration["Redis:Host"] ?? "localhost";
 var redisPort = builder.Configuration["Redis:Port"] ?? "6379";
 var redispassword = builder.Configuration["Redis:Password"];
@@ -39,7 +44,25 @@ builder.Services.AddDbContext<CartDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("NpgsqlConnection"));
 });
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],     
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+        ClockSkew = TimeSpan.Zero 
+    };
+});
 var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var dbcontext = scope.ServiceProvider.GetRequiredService<CartDbContext>();

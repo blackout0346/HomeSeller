@@ -47,6 +47,7 @@ public class CartService : ICartService
     public async Task ClearCartAsync(Guid userId)
     {
         await _cartstore.ClearCartAsync(userId);
+        
     }
 
     private static CartResponse MapToResponse(Cart? cart, Guid userId)
