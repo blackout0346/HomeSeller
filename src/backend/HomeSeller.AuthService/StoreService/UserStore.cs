@@ -108,15 +108,32 @@ namespace HomeSellerServer.StoreService
 
         private async Task SetCacheAsync(Users user)
         {
-            var json = JsonSerializer.Serialize(user);
-            await _redis.StringSetAsync($"user:id{user.Id}", json, _cacheExpiry);
-            await _redis.StringSetAsync($"user:login{user.Login}", json, TimeSpan.FromMinutes(5));
+            try
+            {
+                var json = JsonSerializer.Serialize(user);
+                await _redis.StringSetAsync($"user:id{user.Id}", json, _cacheExpiry);
+                await _redis.StringSetAsync($"user:login{user.Login}", json, _cacheExpiry);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+           
         }
 
         private async Task InvalidateCacheAsync(Users user)
         {
-            await _redis.KeyDeleteAsync($"user:id{user.Id}");
-            await _redis.KeyDeleteAsync($"user:login{user.Login}");
+            try
+            {
+                await _redis.KeyDeleteAsync($"user:id{user.Id}");
+                await _redis.KeyDeleteAsync($"user:login{user.Login}");
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+          
         }
     }
 }
