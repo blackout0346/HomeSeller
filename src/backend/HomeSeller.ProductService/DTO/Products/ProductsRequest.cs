@@ -1,6 +1,4 @@
-﻿using HomeSellerServer.Module;
-
-namespace HomeSellerServer.DTO.Products;
+﻿namespace ProductService.DTO.Products;
 
 public class ProductsRequest
 {

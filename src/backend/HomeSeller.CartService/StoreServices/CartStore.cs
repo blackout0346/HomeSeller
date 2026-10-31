@@ -9,13 +9,11 @@ namespace HomeSeller.CartService.StoreServices;
 public class CartStore : ICartStore
 {
     CartDbContext _cartDbContext;
-    private readonly IDatabase _redis;
-    private readonly ILogger<CartStore> _logger;
-    private readonly TimeSpan? cacheExpiry = TimeSpan.FromHours(2);
 
-    public CartStore(CartDbContext context, ILogger<CartStore> logger, IConnectionMultiplexer muxer)
+
+    public CartStore(CartDbContext context)
     {
-        _redis = muxer.GetDatabase();
+
         _cartDbContext = context;
     }
 
@@ -71,7 +69,7 @@ public class CartStore : ICartStore
         {
             cart.CartItems.Remove(item);
             await _cartDbContext.SaveChangesAsync();
-            await CacheHelper.InvalidateCacheAsync(_redis, _logger, "cart:id");
+          
             return true;
         }
 
@@ -81,13 +79,9 @@ public class CartStore : ICartStore
 
     public async Task<Cart?> GetCartByUserIdAsync(Guid userId)
     {
-        var cacheKey = $"cart:id:{userId}";
-        await CacheHelper.GetCacheAsync<Cart?>(_redis,_logger,cacheKey);
+     
         var cart = await _cartDbContext.Cart.Include(c => c.CartItems).FirstOrDefaultAsync(c => c.UserId == userId);
-        if (cart != null)
-        {
-            await CacheHelper.SetCacheAsync<Cart?>(_redis,_logger,cart, cacheKey, cacheExpiry);
-        }
+      
 
         return cart;
     }
@@ -103,6 +97,6 @@ public class CartStore : ICartStore
         _cartDbContext.RemoveRange(cart.CartItems);
 
         await _cartDbContext.SaveChangesAsync();
-        await CacheHelper.InvalidateCacheAsync(_redis,_logger,"cart:id");
+      
     }
 }

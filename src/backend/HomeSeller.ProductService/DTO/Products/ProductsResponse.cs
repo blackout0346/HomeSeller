@@ -1,6 +1,6 @@
-﻿using HomeSellerServer.Module;
+﻿
 
-namespace HomeSellerServer.DTO.Products;
+namespace ProductService.DTO.Products;
 
 public class ProductsResponse
 {
@@ -9,6 +9,7 @@ public class ProductsResponse
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public DateTime CreateAt { get; set; }
+
 
     public List<string> ImageURLs{get; set;}
     public Guid ConditionId { get; set; }

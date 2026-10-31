@@ -1,9 +1,9 @@
-﻿using HomeSeller.Shared.CacheHelper;
+﻿
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Module;
-using StackExchange.Redis;
+
 
 
 namespace ProductService.StoreService;
@@ -11,51 +11,38 @@ namespace ProductService.StoreService;
 public class ProductStore : IProductStore
 {
     private readonly ProductDbContext _dbcontext;
-    private readonly IDatabase _redis;
-    private readonly ILogger<ProductStore> _logger;
-    private readonly TimeSpan? _cacheExpiry = TimeSpan.FromHours(2);
-
-    public ProductStore(ProductDbContext context, IConnectionMultiplexer muxer, ILogger<ProductStore> logger)
+    public ProductStore(ProductDbContext context)
     {
-        _redis = muxer.GetDatabase();
-        _logger = logger;
+
         this._dbcontext = context;
     }
 
     public async Task<IEnumerable<Products>> GetProducts(string? search = null)
     {
-        var cachekey = "product:Id";
-        await CacheHelper.GetCacheAsync<IEnumerable<Products>>(_redis, _logger, cachekey);
+
+        
         var query = _dbcontext.Products
             .AsNoTracking()
             .Include(p => p.Condition)
             .Include(p => p.ImageURLs)
             .Include(p => p.ProductTags)
             .ThenInclude(pt => pt.Tag)
+            .OrderBy(p => p.Id)
+            .Take(20)
             .AsQueryable();
+
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var searchTerm = $"%{search.Trim()}%";
+            var searchTerm = $"%{search.Trim().ToLower()}%";
             query = query.Where(p =>
-                EF.Functions.ILike(p.NameProduct, search));
+                EF.Functions.ILike(p.NameProduct, searchTerm));
         }
-
-        if (query != null)
-        {
-            foreach (var product in query)
-            {
-                await CacheHelper.SetCacheAsync(_redis, _logger, product, cachekey, _cacheExpiry);
-            }
-        }
-
-        return await query.ToListAsync();
+        return query;
     }
 
     public async Task<Products?> GetProductsIdAsync(Guid id)
     {
-        var cachekey = $"product:Id:{id}";
-        await CacheHelper.GetCacheAsync<Products?>(_redis, _logger, cachekey);
 
         var product = await _dbcontext.Products
             .AsNoTracking()
@@ -64,10 +51,7 @@ public class ProductStore : IProductStore
             .Include(p => p.ProductTags)
             .ThenInclude(pt => pt.Tag)
             .FirstOrDefaultAsync(p => p.Id == id);
-        if (product != null)
-        {
-            await CacheHelper.SetCacheAsync(_redis, _logger, product, cachekey, _cacheExpiry);
-        }
+
 
         return product;
     }
@@ -82,7 +66,8 @@ public class ProductStore : IProductStore
             return true;
         }
 
-        await CacheHelper.InvalidateCacheAsync(_redis, _logger, "product:Id");
+    
+
         return false;
     }
 
@@ -99,24 +84,16 @@ public class ProductStore : IProductStore
 
     public async Task<IEnumerable<Products>> GetProductsByIdsAsync(IEnumerable<Guid> ids)
     {
-        var cachekey = $"product:Id:{ids}";
-        await CacheHelper.GetCacheAsync<IEnumerable<Products>>(_redis, _logger, cachekey);
-
+    
         var products = await _dbcontext.Products
             .AsNoTracking()
+            .OrderBy(p => p.Id)
+            .Take(20)
             .Include(p => p.Condition)
             .Include(p => p.ImageURLs)
             .Include(p => p.ProductTags)
             .ThenInclude(pt => pt.Tag)
             .Where(p => ids.Contains(p.Id)).ToListAsync();
-
-        if (products != null)
-        {
-            foreach (var product in products)
-            {
-                await CacheHelper.SetCacheAsync(_redis, _logger, product, cachekey, _cacheExpiry);
-            }
-        }
 
         return products;
     }
@@ -166,6 +143,5 @@ public class ProductStore : IProductStore
         }
 
         await _dbcontext.SaveChangesAsync();
-        await CacheHelper.InvalidateCacheAsync(_redis, _logger, "product:Id");
     }
 }
