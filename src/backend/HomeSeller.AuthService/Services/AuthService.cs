@@ -1,26 +1,33 @@
-﻿using HomeSeller.Shared;
+﻿using HomeSeller.Shared.CacheHelper;
 using HomeSeller.Shared.EventUser;
 using HomeSellerServer.DTO;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using MassTransit;
+using StackExchange.Redis;
 
 namespace HomeSellerServer.Services
 {
     public class AuthService : IAuthService
     {
-       
         private readonly IHashPassword _hashPassword;
         private readonly IUserStore _userStore;
         private readonly IPublishEndpoint _publishEndpoint;
-       
+        private readonly ILogger<AuthService> _logger;
+        private readonly IDatabase _redis;
+        private readonly TimeSpan? _cacheExpiry = TimeSpan.FromMinutes(5);
+
         private readonly IJwtTokenGenerator _tokenService;
-        public AuthService(IHashPassword hashPassword, IUserStore userStore, IPublishEndpoint publishEndpoint, IJwtTokenGenerator tokenService)
+
+        public AuthService(IHashPassword hashPassword, IUserStore userStore, IPublishEndpoint publishEndpoint,
+            IJwtTokenGenerator tokenService, IConnectionMultiplexer muxer, ILogger<AuthService> logger)
         {
+            _redis = muxer.GetDatabase();
+            _logger = logger;
             _publishEndpoint = publishEndpoint;
             _hashPassword = hashPassword;
             _userStore = userStore;
-            _tokenService = tokenService; 
+            _tokenService = tokenService;
         }
 
         async Task<RegisterResponse> IAuthService.RegisterAsync(RegisterRequest registerRequest)
@@ -44,18 +51,23 @@ namespace HomeSellerServer.Services
             {
                 UserId = user.Id,
                 Login = user.Login,
-                
             });
             return new RegisterResponse
             {
                 Login = user.Login,
                 UserId = user.Id,
-                Token =  _tokenService.GenerateToken(user)
+                Token = _tokenService.GenerateToken(user)
             };
         }
 
         async Task<LoginResponse> IAuthService.LoginAsync(LoginRequest loginRequest)
         {
+            var cachekey = "user:id";
+            var cachequery = await CacheHelper.GetCacheAsync<LoginResponse>(_redis, _logger, cachekey);
+            if (cachequery != null)
+            {
+                return cachequery;
+            }
             var user = await _userStore.GetByLoginAsync(loginRequest.Login);
             if (user == null)
             {
@@ -73,13 +85,13 @@ namespace HomeSellerServer.Services
             {
                 UserId = user.Id,
                 Login = loginRequest.Login,
-                
             });
+            await CacheHelper.SetCacheAsync(_redis, _logger, user , cachekey, _cacheExpiry );
             return new LoginResponse
             {
                 Login = user.Login,
                 UserId = user.Id,
-                Token =   _tokenService.GenerateToken(user)
+                Token = _tokenService.GenerateToken(user)
             };
         }
 
@@ -106,7 +118,7 @@ namespace HomeSellerServer.Services
             await _userStore.UpdateUserAsync(user);
             await _publishEndpoint.Publish(new UserChangePasswordEvent()
             {
-                UserId =  user.Id,
+                UserId = user.Id,
                 Login = user.Login,
             });
             return true;
@@ -119,6 +131,7 @@ namespace HomeSellerServer.Services
             {
                 return false;
             }
+
             var deleted = await _userStore.DeleteUserAsync(user);
             if (!deleted)
             {
@@ -129,6 +142,7 @@ namespace HomeSellerServer.Services
             {
                 UserId = user.Id,
             });
+            await CacheHelper.InvalidateCacheAsync(_redis, _logger, "user:id");
             return true;
         }
     }

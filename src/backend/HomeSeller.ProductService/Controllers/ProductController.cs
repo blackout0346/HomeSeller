@@ -1,9 +1,9 @@
 ﻿using System.Security.Claims;
-using HomeSellerServer.DTO.Products;
 using HomeSellerServer.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using ProductService.DTO.Products;
 
 namespace ProductService.Controllers;
 
@@ -21,6 +21,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("GetProduct/{productId:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> GetByIdProduct([FromRoute] Guid productId)
     {
@@ -41,6 +42,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("GetProducts")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> GetAllProducts([FromQuery] string? search = null)
     {
@@ -101,30 +103,7 @@ public class ProductController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
-    [HttpGet("GetProductsByIds")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(IEnumerable<ProductsResponse>), 200)]
-    public async Task<IActionResult> GetProductsByIds([FromQuery] List<Guid> productIds)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-        try
-        {
-            if (productIds == null || productIds.Count == 0)
-            {
-                return Ok(Enumerable.Empty<ProductsResponse>());
-            }
 
-            var result = await _productService.GetProductsByIdsAsync(productIds);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
     [HttpDelete("DeleteProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)

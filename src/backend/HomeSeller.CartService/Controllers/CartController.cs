@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeSeller.CartService.Controllers;
 
-[Route("api/cart")]
+[Route("api/Cart")]
 [ApiController]
 [Authorize]
 [EnableRateLimiting("sliding_window")]

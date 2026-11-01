@@ -1,9 +1,12 @@
-﻿using HomeSeller.Shared.EventProduct;
-using HomeSellerServer.DTO.Products;
+﻿using System.Diagnostics;
+using HomeSeller.Shared.CacheHelper;
+using HomeSeller.Shared.EventProduct;
 using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using ProductService.Module;
 using MassTransit;
+using ProductService.DTO.Products;
+using StackExchange.Redis;
 
 namespace ProductService.Services;
 
@@ -11,9 +14,15 @@ public class ProductService : IProductService
 {
     private readonly IProductStore _productStore;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ILogger<ProductService> _logger;
+    private readonly IDatabase _redis;
+    private readonly TimeSpan? _cacheExpiry = TimeSpan.FromHours(1);
 
-    public ProductService(IProductStore productStore, IPublishEndpoint publishEndpoint)
+    public ProductService(IProductStore productStore, IPublishEndpoint publishEndpoint, ILogger<ProductService> logger,
+        IConnectionMultiplexer muxer)
     {
+        _redis = muxer.GetDatabase();
+        _logger = logger;
         _publishEndpoint = publishEndpoint;
         _productStore = productStore;
     }
@@ -21,15 +30,42 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductsResponse>> GetProductsAsync(string? search = null)
     {
+        var cachekey = "products:All";
+        var timer = Stopwatch.StartNew();
+
+        var cachequery = await CacheHelper.GetCacheAsync<IEnumerable<ProductsResponse>>(_redis, _logger, cachekey);
+        if (cachequery != null)
+        {
+            _logger.LogInformation($"get cache - {timer.ElapsedMilliseconds}");
+            timer.Stop();
+            return cachequery;
+        }
+
         var products = await _productStore.GetProducts(search);
-        return products.Select(MapToResponse);
+
+        var productsresponse = products.Select(MapToResponse).ToList();
+
+        await CacheHelper.SetCacheAsync(_redis, _logger, productsresponse, cachekey, _cacheExpiry);
+
+        timer.Stop();
+        _logger.LogInformation($"get no cache - {timer.ElapsedMilliseconds}");
+        return productsresponse;
     }
 
 
     public async Task<ProductsResponse?> GetProductByIdAsync(Guid id)
     {
+        var cachekey = $"products:id{id}";
+        var cachequery = await CacheHelper.GetCacheAsync<ProductsResponse?>(_redis, _logger, cachekey);
+        if (cachequery != null)
+        {
+            return cachequery;
+        }
+
         var product = await _productStore.GetProductsIdAsync(id);
-        return product == null ? null : MapToResponse(product);
+        var productresponse = MapToResponse(product);
+        await CacheHelper.SetCacheAsync(_redis, _logger, productresponse, cachekey, _cacheExpiry);
+        return productresponse;
     }
 
     public async Task<ProductsResponse> CreateProductAsync(Guid userId, ProductsRequest request)
@@ -112,6 +148,7 @@ public class ProductService : IProductService
             UpdateAt = DateTime.UtcNow,
         });
         var updatedProduct = await _productStore.GetProductsIdAsync(productid);
+        await CacheHelper.InvalidateCacheAsync(_redis, _logger, "products:All");
         return updatedProduct == null ? null : MapToResponse(updatedProduct);
     }
 
@@ -130,16 +167,11 @@ public class ProductService : IProductService
             DeleteAt = DateTime.UtcNow,
         });
         await _productStore.DeleteProductAsync(userId, productid);
-
+        await CacheHelper.InvalidateCacheAsync(_redis, _logger, "products:All");
+        await CacheHelper.InvalidateCacheAsync(_redis, _logger, "products:id");
         return true;
     }
-
-    public async Task<IEnumerable<ProductsResponse>> GetProductsByIdsAsync(IEnumerable<Guid> ids)
-    {
-        var products = await _productStore.GetProductsByIdsAsync(ids);
-        return products.Select(MapToResponse);
-    }
-
+    
     private static ProductsResponse MapToResponse(Products products) => new()
     {
         Id = products.Id,
@@ -147,7 +179,7 @@ public class ProductService : IProductService
         CreateAt = products.CreateAt,
         Description = products.Description,
         Price = products.Price,
-        ImageURLs = products.ImageURLs?.Select(img => img.ImageURL).ToList() ?? new List<string>(),
+        ImageURLs = products.ImageURLs?.Select(img => img.ImageURL).ToList(),
         NameProduct = products.NameProduct,
         ConditionId = products.ConditionId,
         NameCondition = products.Condition?.NameCondition ?? string.Empty,

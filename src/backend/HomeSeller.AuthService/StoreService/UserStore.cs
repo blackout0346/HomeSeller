@@ -1,15 +1,21 @@
-﻿using HomeSellerServer.Interface;
+﻿using System.Text.Json;
+using HomeSeller.Shared.CacheHelper;
+using HomeSellerServer.Interface;
 using HomeSellerServer.Module;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 namespace HomeSellerServer.StoreService
 {
     public class UserStore : IUserStore
     {
-        public readonly AppDbContext _appDbContext;
+    
+        private readonly AppDbContext _appDbContext;
+
 
         public UserStore(AppDbContext appDbContext)
         {
+
             _appDbContext = appDbContext;
         }
 
@@ -39,6 +45,7 @@ namespace HomeSellerServer.StoreService
             existingUser.RoleId = updatedUser.RoleId;
 
             await _appDbContext.SaveChangesAsync();
+      
             return true;
         }
 
@@ -51,18 +58,28 @@ namespace HomeSellerServer.StoreService
             }
 
             existingUser.isDeleted = true;
+
+
             await _appDbContext.SaveChangesAsync();
+        
             return true;
         }
 
         public async Task<Users?> GetByIdAsync(Guid id)
         {
-            return await _appDbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+            var user = await _appDbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+         
+
+            return user;
         }
 
         public async Task<Users?> GetByLoginAsync(string login)
         {
-            return await _appDbContext.Users.FirstOrDefaultAsync(u => u.Login == login);
+
+
+            var user = await _appDbContext.Users.FirstOrDefaultAsync(u => u.Login == login);
+            return user;
         }
     }
 }
