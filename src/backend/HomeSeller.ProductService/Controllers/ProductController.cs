@@ -103,6 +103,7 @@ public class ProductController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
     [HttpDelete("DeleteProduct/{productId:guid}")]
     [ProducesResponseType(typeof(ProductsResponse), 200)]
     public async Task<IActionResult> DeleteProduct([FromRoute] Guid productId)
