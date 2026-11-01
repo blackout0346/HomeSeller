@@ -2,19 +2,19 @@
 import { Suspense } from "react";
 import {} from "./layout";
 import {  Card,
-  CardHeader,
-  CardFooter,
+
   CardTitle,
   CardAction,
   CardDescription,
-  CardContent,
+
   CardImage, } from "../components/ui/card";
 import {InputInline} from "../components/ui/input";
+import {Footer} from "../components/ui/footer";
 
 
   export default async function Home() {
 
-  const product={name:"niceproduct",
+  const product={name:"Ремонт холодильников, ларей, торг оборудования",image:"https://images.genius.com/72679941f2dab3deeb3846390eb49655.1000x1000x1.jpg",
      description:"this is a nice product", price:300}
   
   
@@ -27,30 +27,37 @@ import {InputInline} from "../components/ui/input";
        <div className="grid grid-cols-3 " >
 
 
-      
-     <CardImage>
+     <Card size="sm" className="w-80">
+     <CardImage src={product.image}> {product.image}</CardImage>
+     
       <CardTitle>{product.name}</CardTitle>
       <CardDescription>{product.description}</CardDescription>
-      <CardAction>Buy Now for ${product.price}</CardAction>
-      <button>Buy Now</button>
-     </CardImage>
-      <CardImage>
+       <CardAction>Город Улан-Удэ Ул.улица</CardAction>
+           
+   </Card>
+     
+    <Card size="sm" className="w-80">
+     <CardImage src={product.image}> {product.image}</CardImage>
+     
       <CardTitle>{product.name}</CardTitle>
       <CardDescription>{product.description}</CardDescription>
-      <CardAction>Buy Now for ${product.price}</CardAction>
-      <button>Buy Now</button>
-     </CardImage>
-             <CardImage>
+      <CardAction>Город Улан-Удэ Ул.улица</CardAction>
+           
+   </Card>
+     <Card size="sm" className="w-80">
+     <CardImage src={product.image}> {product.image}</CardImage>
+     
       <CardTitle>{product.name}</CardTitle>
       <CardDescription>{product.description}</CardDescription>
-      <CardAction>Buy Now for ${product.price}</CardAction>
-      <button>Buy Now</button>
-     </CardImage>
-
+      <CardAction>Город Улан-Удэ Ул.улица</CardAction>
+           
+   </Card>
+  
       </div>
      
-
+        <Footer />
       </Suspense>
   
+
   );
 }

@@ -25,11 +25,10 @@ function CardImage({children, className, ...props}: React.ComponentProps<"img">)
     <Card className="relative mx-auto w-full max-w-sm pt-0">
       <div className="absolute inset-0 z-30 aspect-video bg-black/35" />
       <img
-        src="https://avatar.vercel.sh/shadcn1"
-        alt="Event cover"
+        {...props}
         className="relative z-20 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
       />
-      {children}
+  
     </Card>
   )
 }
@@ -51,7 +50,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-title"
       className={cn(
-        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        "font-heading text-base leading-snug  text-center font-medium group-data-[size=sm]/card:text-sm",
         className
       )}
       {...props}
@@ -63,7 +62,8 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
+      
+      className={cn(" text-sm text-center  text-muted-foreground   ", className)}
       {...props}
     />
   )
